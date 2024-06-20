@@ -23,7 +23,7 @@ export const getWalletBalance = async (address, chainIndexFound) => {
     if (chainIndexFound != -1) { // Single Chain
       const resp = await client.BalanceService.getTokenBalancesForWalletAddress(
         CHAINS[chainIndexFound].toString(),
-        address, // 0x8bbc2Cc76DC3f6D1CC5E9FE855D66AdB6828B9fe
+        address, //  0x8bbc2Cc76DC3f6D1CC5E9FE855D66AdB6828B9fe
         { quoteCurrency: QUOTE_CURRENCY[0].toString() }
       );
 

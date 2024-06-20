@@ -4,7 +4,6 @@ import 'dotenv/config'
 const UD_API_KEY = process.env.UD_API_KEY;
 
 export async function resolveUD(domain, currency='ETH') {
-  console.log(domain);
   try {
     const resolution = new Resolution({
       apiKey: UD_API_KEY,

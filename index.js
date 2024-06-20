@@ -9,21 +9,23 @@ import { resolveUD } from "./src/utils/resolveUD.js";
 
 import { getCryptoEvents } from "./src/apis/getCryptoEvents.js";
 
-import 'dotenv/config'
+import "dotenv/config";
+import { buildChart } from "./src/utils/buildChart.js";
 
-const provider = new ethers.JsonRpcProvider(`${process.env.ETHEREUM_RPC_PROVIDER}`);
-const signer = new ethers.Wallet(
-  `${process.env.PRIVATE_KEY}`,
-  provider
+import { walletPerformance } from "./src/controller/walletPerformance.js"
+
+const provider = new ethers.JsonRpcProvider(
+  `${process.env.ETHEREUM_RPC_PROVIDER}`
 );
+const signer = new ethers.Wallet(`${process.env.PRIVATE_KEY}`, provider);
 console.log("Signer: ", signer);
 
-const COMMANDS = ["/portfolio", "/help", "/calendar"];
-const CHAINS = ["eth", "pol", "bsc", "arb", "polzk"]
+const COMMANDS = ["/portfolio", "/help", "/calendar", "/performance"];
+const CHAINS = ["eth", "pol", "bsc", "arb", "polzk"];
 
 const WELCOME_MESSAGE = "Welcome to Wallet Tracker🎊\n";
 
-const HELP_MESSAGE = `To best use this tool, you can use the following command(s)👇\n1. /portfolio [wallet address] [chain] - To get you current token holding and asset valuation on specified chain. Chain options: "eth", "pol", "bsc", "arb", "polzk". If not specified, you'll get the portfolio across all 5 chains\n2. /calendar [number of days] - To get crypto events organized by your favorite tokens within number of days\nWe are constantly working on it and adding new features. Type '/help' to get the latest available commands and responses.`;
+const HELP_MESSAGE = `To best use this tool, you can use the following command(s)👇\n1. /portfolio [wallet address] [chain] - To get you current token holding and asset valuation on specified chain. Chain options: "eth", "pol", "bsc", "arb", "polzk". If not specified, you'll get the portfolio across all 5 chains\n2. /calendar [number of days] - To get crypto events organized by your favorite tokens within number of days\n3. /performance [your wallet address] [no of days] [chain] - To get ypur wallet performance across the given days.\nWe are constantly working on it and adding new features. \nType '/help' to get the latest available commands and responses.`;
 
 const userAlice = await PushAPI.initialize(signer, {
   env: CONSTANTS.ENV.PROD,
@@ -141,11 +143,11 @@ stream.on(CONSTANTS.STREAM.CHAT, async (message) => {
 
       if (address.substring(0, 2) !== "0x") {
         resolvedAddress = await resolveENS(address);
-        console.log("Resolved Address ENS: ", resolvedAddress)
+        console.log("Resolved Address ENS: ", resolvedAddress);
 
         if (resolvedAddress.error) {
           resolvedAddress = await resolveUD(address);
-          console.log("Resolved Address UD: ", resolvedAddress)
+          console.log("Resolved Address UD: ", resolvedAddress);
 
           if (resolvedAddress.error) {
             throw {
@@ -163,17 +165,29 @@ stream.on(CONSTANTS.STREAM.CHAT, async (message) => {
         };
       }
 
-      let walletData;
+      let walletData, pieChartURI;
 
       if (params.length == 2) {
         // All chains
         chainIndexFound = -1;
-        walletData = await formattedWalletBalance(resolvedAddress, chainIndexFound);
+        walletData = await formattedWalletBalance(
+          resolvedAddress,
+          chainIndexFound
+        );
+
+        pieChartURI = await buildChart(walletData);
+        // console.log("Pie chart URI: ", pieChartURI);
       }
 
       if (params.length == 3) {
         // Specific chain
-        walletData = await formattedWalletBalance(resolvedAddress, chainIndexFound);
+        walletData = await formattedWalletBalance(
+          resolvedAddress,
+          chainIndexFound
+        );
+
+        pieChartURI = await buildChart(walletData);
+        // console.log("Pie chart URI: ", pieChartURI);
       }
 
       if (walletData.error) {
@@ -203,9 +217,14 @@ stream.on(CONSTANTS.STREAM.CHAT, async (message) => {
 
       console.time("⌚sending-message-time");
 
-      const aliceMessagesBob = await userAlice.chat.send(message.from, {
+      await userAlice.chat.send(message.from, {
         type: "Text",
         content: `${walletPerformance}`,
+      });
+
+      await userAlice.chat.send(message.from, {
+        type: "Image",
+        content: `{"content":"${pieChartURI}"}`,
       });
 
       console.timeEnd("⌚sending-message-time");
@@ -281,6 +300,81 @@ stream.on(CONSTANTS.STREAM.CHAT, async (message) => {
 
       console.timeEnd("⌚totalExecutionTime"); // End total timer
     }
+
+    // performance
+    if (command == COMMANDS[3].toString()) {
+      if (params.length != 3 && params.length != 4) {
+        throw {
+          message: `Invalid parameters count⚠️\nPlease follow the specific format:\n/performance [your wallet address] [no of days] [chain] (optional)`,
+        };
+      }
+
+      let chainIndexFound = -1;
+
+      if (params.length == 4  ) {
+        chainIndexFound = CHAINS.findIndex((chain) => chain == params[3]);
+
+        if (chainIndexFound == -1) {
+          throw {
+            message: `Invalid chain⚠️\nPlease select one from these supported chains:\n1. Ethereum Mainnet - "eth"\n2. Polygon Mainnet - "pol"\n3. Binance Smart Chain - "bsc"\n4. Arbitrum Mainnet - "arb"\n5. Polygon zkEVM Mainnet - "polzk"`,
+          };
+        }
+      }
+
+      const address = params[1];
+      const noOfDays = Number(params[2]);
+
+      console.log(`📌Command: ${command}, noOfDays: ${noOfDays}`);
+
+      if (isNaN(noOfDays) || noOfDays < 0 ) {
+        throw {
+          message: `Invalid number of days⚠️\nPlease enter a positive integer`,
+        };
+      }
+
+      let resolvedAddress = "";
+      resolvedAddress = address;
+
+      if (address.substring(0, 2) !== "0x") {
+        resolvedAddress = await resolveENS(address);
+        console.log("Resolved Address ENS: ", resolvedAddress);
+
+        if (resolvedAddress.error) {
+          resolvedAddress = await resolveUD(address);
+          console.log("Resolved Address UD: ", resolvedAddress);
+
+          if (resolvedAddress.error) {
+            throw {
+              message: `Invalid domain⚠️\nCheck your domain name`,
+            };
+          }
+        }
+
+        console.log("Resolved Address: ", resolvedAddress);
+      }
+
+      if (!checkValidWalletAddress(resolvedAddress)) {
+        throw {
+          message: `Invalid address⚠️\nCheck your wallet address`,
+        };
+      }
+
+      const { imageURI } = await walletPerformance(resolvedAddress, chainIndexFound, noOfDays);
+
+      // console.timeEnd("⌚totalExecutionTime"); // End total timer
+
+      console.time("⌚sending-message-time");
+
+      await userAlice.chat.send(message.from, {
+        type: "Image",
+        content: `{"content":"${imageURI}"}`,
+      });
+
+      console.timeEnd("⌚sending-message-time");
+
+      console.timeEnd("⌚totalExecutionTime"); // End total timer
+    }
+
   } catch (error) {
     console.log("Error from index: ", error);
 
