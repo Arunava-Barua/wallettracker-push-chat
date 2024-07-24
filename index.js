@@ -1,31 +1,27 @@
+import "dotenv/config";
+
 import { PushAPI, CONSTANTS } from "@pushprotocol/restapi";
 import { ethers } from "ethers";
-
-import { formattedWalletBalance } from "./src/controller/formattedWalletBalance.js";
 
 import { checkValidWalletAddress } from "./src/utils/checkValidWalletAddress.js";
 import { resolveENS } from "./src/utils/resolveENS.js";
 import { resolveUD } from "./src/utils/resolveUD.js";
 
-import { getCryptoEvents } from "./src/apis/getCryptoEvents.js";
 
-import "dotenv/config";
-import { buildChart } from "./src/utils/buildChart.js";
+import { command_portfolio } from "./src/commands/command_portfolio.js";
+import { command_performance } from "./src/commands/command_performance.js";
+import { command_topNfts } from "./src/commands/command_topNfts.js";
+import { command_calendar } from "./src/commands/command_calendar.js";
 
-import { walletPerformance } from "./src/controller/walletPerformance.js"
+// ***************************************************************
+// /////////////////// INITIALIZE USER ALICE /////////////////////
+// ***************************************************************
 
 const provider = new ethers.JsonRpcProvider(
   `${process.env.ETHEREUM_RPC_PROVIDER}`
 );
 const signer = new ethers.Wallet(`${process.env.PRIVATE_KEY}`, provider);
 console.log("Signer: ", signer);
-
-const COMMANDS = ["/portfolio", "/help", "/calendar", "/performance"];
-const CHAINS = ["eth", "pol", "bsc", "arb", "polzk"];
-
-const WELCOME_MESSAGE = "Welcome to Wallet Tracker🎊\n";
-
-const HELP_MESSAGE = `To best use this tool, you can use the following command(s)👇\n1. /portfolio [wallet address] [chain] - To get you current token holding and asset valuation on specified chain. Chain options: "eth", "pol", "bsc", "arb", "polzk". If not specified, you'll get the portfolio across all 5 chains\n2. /calendar [number of days] - To get crypto events organized by your favorite tokens within number of days\n3. /performance [your wallet address] [no of days] [chain] - To get ypur wallet performance across the given days.\nWe are constantly working on it and adding new features. \nType '/help' to get the latest available commands and responses.`;
 
 const userAlice = await PushAPI.initialize(signer, {
   env: CONSTANTS.ENV.PROD,
@@ -34,6 +30,39 @@ const userAlice = await PushAPI.initialize(signer, {
 if (userAlice.errors.length > 0) {
   // Handle Errors Here
 }
+
+// ***************************************************************
+// ////////////////////// AVAILABLE COMMANDS /////////////////////
+// ***************************************************************
+
+const COMMANDS = [
+  "/portfolio",
+  "/help",
+  "/calendar",
+  "/performance",
+  "/topnfts",
+];
+
+// ***************************************************************
+// ////////////////////// AVAILABLE CHAINS ///////////////////////
+// ***************************************************************
+
+const CHAINS = ["eth", "pol", "bsc", "arb", "polzk"];
+
+// ***************************************************************
+// /////////////////// WELCOME & HELP MESSAGES ///////////////////
+// ***************************************************************
+
+const WELCOME_MESSAGE = "Welcome to Wallet Tracker🎊\n";
+
+const HELP_MESSAGE = `To best use this tool, you can use the following command(s)👇\n1. /portfolio [wallet address] [chain] - To get you current token holding and asset valuation on specified chain. Chain options: "eth", "pol", "bsc", "arb", "polzk". If not specified, you'll get the portfolio across all 5 chains\n2. /calendar [number of days] - To get crypto events organized by your favorite tokens within number of days\n3. /performance [your wallet address] [no of days] [chain] - To get your wallet performance across the given days.\nWe are constantly working on it and adding new features.\n4. /topnfts [your wallet address] [no of results] [chain] - To get the top recent NFTs in your wallet. Chain options: "eth", "pol", "bsc", "arb". No of results should positive integer less than 10\nType '/help' to get the latest available commands and responses.`;
+
+// ***************************************************************
+// /////////////////// INITIALIZE CHAT STREAM ////////////////////
+// ***************************************************************
+/*
+  FOR MORE DETAILS ON CHAT STREAMS AND CONFIGURATION OPTIONS, PLEASE REFER: https://push.org/docs/chat/build/stream-chat/
+*/
 
 const stream = await userAlice.initStream(
   [
@@ -55,7 +84,9 @@ const stream = await userAlice.initStream(
   }
 );
 
-// Chat event listeners:
+// ***************************************************************
+// /////////////////// SETUP EVENT LISTENERS /////////////////////
+// ***************************************************************
 
 // Stream connection established:
 stream.on(CONSTANTS.STREAM.CONNECT, async (a) => {
@@ -69,15 +100,10 @@ stream.on(CONSTANTS.STREAM.CONNECT, async (a) => {
 stream.on(CONSTANTS.STREAM.CHAT, async (message) => {
   try {
     console.log("Encrypted Message Received");
-    console.log("Message: ", message); // Log the message payload
 
     if (message.event == "chat.request") {
-      const response = await userAlice.chat.accept(message.from);
-      console.log("Accept response: ", response);
+      await userAlice.chat.accept(message.from);
     }
-
-    // start whole
-    console.time("⌚totalExecutionTime"); // Start total timer
 
     if (message.origin === "self") {
       console.log("Ignoring the message...");
@@ -94,13 +120,14 @@ stream.on(CONSTANTS.STREAM.CHAT, async (message) => {
     const params = message.message.content.split(" ");
     const command = params[0];
 
+    // COMMAND 0: Welcome message
     if (!COMMANDS.includes(command.toLowerCase())) {
       throw {
         message: `${WELCOME_MESSAGE}${HELP_MESSAGE}`,
       };
     }
 
-    // help
+    // COMMAND 1: /help
     if (command == COMMANDS[1].toString()) {
       if (params.length != 1) {
         throw {
@@ -108,14 +135,24 @@ stream.on(CONSTANTS.STREAM.CHAT, async (message) => {
         };
       }
 
+      // ***************************************************************
+      // //////////////////// SENDING MESSAGES /////////////////////////
+      // ***************************************************************
+
       await userAlice.chat.send(message.from, {
         type: "Text",
         content: `${HELP_MESSAGE}`,
       });
+
+      // **************************************************************
     }
 
-    // portfolio
+    // COMMAND 2: /portfolio
     if (command == COMMANDS[0].toString()) {
+      // ***************************************************************
+      // //////////////////////// CHECKS START /////////////////////////
+      // ***************************************************************
+
       if (params.length != 2 && params.length != 3) {
         throw {
           message: `Invalid parameters count⚠️\nPlease follow the specific format:\n/portfolio [your wallet address] [chain]`,
@@ -136,18 +173,14 @@ stream.on(CONSTANTS.STREAM.CHAT, async (message) => {
 
       const address = params[1];
 
-      console.log(`📌Command: ${command}, address: ${address}`);
-
       let resolvedAddress = "";
       resolvedAddress = address;
 
       if (address.substring(0, 2) !== "0x") {
         resolvedAddress = await resolveENS(address);
-        console.log("Resolved Address ENS: ", resolvedAddress);
 
         if (resolvedAddress.error) {
           resolvedAddress = await resolveUD(address);
-          console.log("Resolved Address UD: ", resolvedAddress);
 
           if (resolvedAddress.error) {
             throw {
@@ -155,8 +188,6 @@ stream.on(CONSTANTS.STREAM.CHAT, async (message) => {
             };
           }
         }
-
-        console.log("Resolved Address: ", resolvedAddress);
       }
 
       if (!checkValidWalletAddress(resolvedAddress)) {
@@ -165,75 +196,28 @@ stream.on(CONSTANTS.STREAM.CHAT, async (message) => {
         };
       }
 
-      let walletData, pieChartURI;
+      // ***************************************************************
+      // //////////////////////// CHECKS END /////////////////////////
+      // ***************************************************************
 
-      if (params.length == 2) {
-        // All chains
-        chainIndexFound = -1;
-        walletData = await formattedWalletBalance(
-          resolvedAddress,
-          chainIndexFound
-        );
+      const receiver = message.from;
+      await command_portfolio(
+        params,
+        receiver,
+        userAlice,
+        resolvedAddress,
+        chainIndexFound
+      );
 
-        pieChartURI = await buildChart(walletData);
-        // console.log("Pie chart URI: ", pieChartURI);
-      }
-
-      if (params.length == 3) {
-        // Specific chain
-        walletData = await formattedWalletBalance(
-          resolvedAddress,
-          chainIndexFound
-        );
-
-        pieChartURI = await buildChart(walletData);
-        // console.log("Pie chart URI: ", pieChartURI);
-      }
-
-      if (walletData.error) {
-        throw {
-          message: `${walletData.message}`,
-        };
-      }
-
-      const walletWorth = walletData.totalWorth;
-      const walletTokens = walletData.tokensInfo;
-
-      let walletPerformance;
-
-      if (chainIndexFound == -1) {
-        walletPerformance = `Total Assets Worth: 💲${walletWorth}\n\n\n`;
-      }
-
-      if (chainIndexFound != -1) {
-        walletPerformance = `Assets Worth: 💲${walletWorth}\n\n\n`;
-      }
-
-      walletTokens.map((walletToken, index) => {
-        walletPerformance += `• ${walletToken.name}: ${walletToken.balance} ($${walletToken.worth})\n`;
-      });
-
-      // console.timeEnd("⌚totalExecutionTime"); // End total timer
-
-      console.time("⌚sending-message-time");
-
-      await userAlice.chat.send(message.from, {
-        type: "Text",
-        content: `${walletPerformance}`,
-      });
-
-      await userAlice.chat.send(message.from, {
-        type: "Image",
-        content: `{"content":"${pieChartURI}"}`,
-      });
-
-      console.timeEnd("⌚sending-message-time");
-
-      console.timeEnd("⌚totalExecutionTime"); // End total timer
+      // **************************************************************
     }
 
-    // calendar
+    // COMMAND 3: /calendar
     if (command == COMMANDS[2].toString()) {
+      // ***************************************************************
+      // //////////////////////// CHECKS START /////////////////////////
+      // ***************************************************************
+
       if (params.length != 2) {
         throw {
           message: `Invalid parameters count⚠️\nPlease follow the specific format:\n/calendar [number of days]`,
@@ -242,8 +226,6 @@ stream.on(CONSTANTS.STREAM.CHAT, async (message) => {
 
       const noOfDays = Number(params[1]);
 
-      console.log(`📌Command: ${command}, end date: ${noOfDays}`);
-
       if (typeof noOfDays != "number" || noOfDays < 0) {
         throw {
           message:
@@ -251,58 +233,65 @@ stream.on(CONSTANTS.STREAM.CHAT, async (message) => {
         };
       }
 
+      // ***************************************************************
+      // //////////////////////// CHECKS END /////////////////////////
+      // ***************************************************************
+
+      const receiver = message.from
+      await command_calendar(receiver, userAlice, noOfDays)
+
       // Error from covalent
-      const walletData = await formattedWalletBalance(message.from.slice(7));
+      // const walletData = await formattedWalletBalance(message.from.slice(7));
 
-      console.log("⚠️⚠️⚠️Wallet DAta: ", walletData);
+      // if (walletData.error) {
+      //   throw {
+      //     message: `${walletData.message}`,
+      //   };
+      // }
 
-      if (walletData.error) {
-        throw {
-          message: `${walletData.message}`,
-        };
-      }
+      // if (walletData.tokensInfo.length == 0) {
+      //   throw {
+      //     message:
+      //       "There are no tokens in your wallet. Try a different wallet!!",
+      //   };
+      // }
 
-      if (walletData.tokensInfo.length == 0) {
-        throw {
-          message:
-            "There are no tokens in your wallet. Try a different wallet!!",
-        };
-      }
+      // const walletTokens = walletData.tokensInfo;
+      // let tokenSymbols = [];
 
-      const walletTokens = walletData.tokensInfo;
-      let tokenSymbols = [];
-
-      walletTokens.map((walletToken, index) => {
-        tokenSymbols.push(walletToken.name);
-      });
+      // walletTokens.map((walletToken, index) => {
+      //   tokenSymbols.push(walletToken.name);
+      // });
 
       // Get events here
-      const { cryptoEvents } = await getCryptoEvents(tokenSymbols, noOfDays);
+      // const { cryptoEvents } = await getCryptoEvents(tokenSymbols, noOfDays);
 
-      if (cryptoEvents.length == 0) {
-        throw { message: "No crypto events within the specified days!" };
-      }
+      // if (cryptoEvents.length == 0) {
+      //   throw { message: "No crypto events within the specified days!" };
+      // }
 
-      const eventsMessage =
-        "Here, is the list of events organized📅: \n• " +
-        cryptoEvents.join("\n• ");
+      // const eventsMessage =
+      //   "Here, is the list of events organized📅: \n• " +
+      //   cryptoEvents.join("\n• ");
 
-      // console.timeEnd("⌚totalExecutionTime"); // End total timer
+      // ***************************************************************
+      // //////////////////// SENDING MESSAGES /////////////////////////
+      // ***************************************************************
 
-      console.time("⌚sending-message-time");
+      // await userAlice.chat.send(message.from, {
+      //   type: "Text",
+      //   content: `${eventsMessage}`,
+      // });
 
-      const aliceMessagesBob = await userAlice.chat.send(message.from, {
-        type: "Text",
-        content: `${eventsMessage}`,
-      });
-
-      console.timeEnd("⌚sending-message-time");
-
-      console.timeEnd("⌚totalExecutionTime"); // End total timer
+      // **************************************************************
     }
 
-    // performance
+    // COMMAND 4: /performance
     if (command == COMMANDS[3].toString()) {
+      // ***************************************************************
+      // //////////////////////// CHECKS START /////////////////////////
+      // ***************************************************************
+
       if (params.length != 3 && params.length != 4) {
         throw {
           message: `Invalid parameters count⚠️\nPlease follow the specific format:\n/performance [your wallet address] [no of days] [chain] (optional)`,
@@ -311,7 +300,7 @@ stream.on(CONSTANTS.STREAM.CHAT, async (message) => {
 
       let chainIndexFound = -1;
 
-      if (params.length == 4  ) {
+      if (params.length == 4) {
         chainIndexFound = CHAINS.findIndex((chain) => chain == params[3]);
 
         if (chainIndexFound == -1) {
@@ -324,9 +313,7 @@ stream.on(CONSTANTS.STREAM.CHAT, async (message) => {
       const address = params[1];
       const noOfDays = Number(params[2]);
 
-      console.log(`📌Command: ${command}, noOfDays: ${noOfDays}`);
-
-      if (isNaN(noOfDays) || noOfDays < 0 ) {
+      if (isNaN(noOfDays) || noOfDays < 0) {
         throw {
           message: `Invalid number of days⚠️\nPlease enter a positive integer`,
         };
@@ -337,11 +324,9 @@ stream.on(CONSTANTS.STREAM.CHAT, async (message) => {
 
       if (address.substring(0, 2) !== "0x") {
         resolvedAddress = await resolveENS(address);
-        console.log("Resolved Address ENS: ", resolvedAddress);
 
         if (resolvedAddress.error) {
           resolvedAddress = await resolveUD(address);
-          console.log("Resolved Address UD: ", resolvedAddress);
 
           if (resolvedAddress.error) {
             throw {
@@ -349,8 +334,6 @@ stream.on(CONSTANTS.STREAM.CHAT, async (message) => {
             };
           }
         }
-
-        console.log("Resolved Address: ", resolvedAddress);
       }
 
       if (!checkValidWalletAddress(resolvedAddress)) {
@@ -359,25 +342,91 @@ stream.on(CONSTANTS.STREAM.CHAT, async (message) => {
         };
       }
 
-      const { imageURI } = await walletPerformance(resolvedAddress, chainIndexFound, noOfDays);
+      // ***************************************************************
+      // //////////////////////// CHECKS END /////////////////////////
+      // ***************************************************************
 
-      // console.timeEnd("⌚totalExecutionTime"); // End total timer
-
-      console.time("⌚sending-message-time");
-
-      await userAlice.chat.send(message.from, {
-        type: "Image",
-        content: `{"content":"${imageURI}"}`,
-      });
-
-      console.timeEnd("⌚sending-message-time");
-
-      console.timeEnd("⌚totalExecutionTime"); // End total timer
+      const receiver = message.from;
+      await command_performance(
+        noOfDays,
+        receiver,
+        userAlice,
+        resolvedAddress,
+        chainIndexFound
+      );
     }
 
-  } catch (error) {
-    console.log("Error from index: ", error);
+    // COMMAND 5: /top nfts
+    if (command == COMMANDS[4].toString()) {
+      // ***************************************************************
+      // //////////////////////// CHECKS START /////////////////////////
+      // ***************************************************************
 
+      // Checks start here
+      if (params.length != 4 && params.length != 4) {
+        throw {
+          message: `Invalid parameters count⚠️\nPlease follow the specific format:\n/topnfts [your wallet address] [no of results] [chain]`,
+        };
+      }
+
+      let chainIndexFound = -1;
+
+      if (params.length == 4) {
+        chainIndexFound = CHAINS.findIndex((chain) => chain == params[3]);
+
+        if (chainIndexFound == -1) {
+          throw {
+            message: `Invalid chain⚠️\nPlease select one from these supported chains:\n1. Ethereum Mainnet - "eth"\n2. Polygon Mainnet - "pol"\n3. Binance Smart Chain - "bsc"\n4. Arbitrum Mainnet - "arb"`,
+          };
+        }
+      }
+
+      const address = params[1];
+      const noOfNfts = Number(params[2]);
+
+      if (isNaN(noOfNfts) || noOfNfts > 10) {
+        throw {
+          message: `Invalid number of nfts⚠️\nPlease enter a positive integer less than 10`,
+        };
+      }
+
+      let resolvedAddress = "";
+      resolvedAddress = address;
+
+      if (address.substring(0, 2) !== "0x") {
+        resolvedAddress = await resolveENS(address);
+
+        if (resolvedAddress.error) {
+          resolvedAddress = await resolveUD(address);
+
+          if (resolvedAddress.error) {
+            throw {
+              message: `Invalid domain⚠️\nCheck your domain name`,
+            };
+          }
+        }
+      }
+
+      if (!checkValidWalletAddress(resolvedAddress)) {
+        throw {
+          message: `Invalid address⚠️\nCheck your wallet address`,
+        };
+      }
+
+      // ***************************************************************
+      // //////////////////////// CHECKS END /////////////////////////
+      // ***************************************************************
+
+      const receiver = message.from;
+      await command_topNfts(
+        receiver,
+        userAlice,
+        resolvedAddress,
+        chainIndexFound,
+        noOfNfts
+      );
+    }
+  } catch (error) {
     await userAlice.chat.send(message.from, {
       type: "Text",
       content: `${
@@ -392,13 +441,15 @@ stream.on(CONSTANTS.STREAM.CHAT, async (message) => {
 // Chat operation received:
 stream.on(CONSTANTS.STREAM.CHAT_OPS, (data) => {
   console.log("Chat operation received.");
-  console.log(data); // Log the chat operation data
 });
-
-// Connect the stream:
-await stream.connect(); // Establish the connection after setting up listeners
 
 // Stream disconnection:
 stream.on(CONSTANTS.STREAM.DISCONNECT, async () => {
   console.log("Stream Disconnected");
 });
+
+// ***************************************************************
+// //////////////////// CONNECT THE STREAM ///////////////////////
+// ***************************************************************
+
+await stream.connect(); // Establish the connection after setting up listeners

@@ -11,7 +11,7 @@ const CHAINS = [
 ];
 const QUOTE_CURRENCY = ["USD"];
 
-const COVALENT_API_KEY= process.env.COVALENT_API_KEY
+const COVALENT_API_KEY= process.env.COVALENT_API_KEY;
 
 export const getWalletBalance = async (address, chainIndexFound) => {
   try {

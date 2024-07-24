@@ -27,8 +27,11 @@ const processData = (items) => {
     });
   });
 
-  const dates = Object.keys(portfolioData).sort();
-  const values = dates.map((date) => portfolioData[date]);
+  let dates = Object.keys(portfolioData).sort();
+  let values = dates.map((date) => portfolioData[date]);
+
+  dates.pop();
+  values.pop();
 
   return { error: false, dates, values };
 };
