@@ -23,18 +23,18 @@ const DEMO_DATA = {
 
 export const buildChart = async (tokensData) => {
   try {
-    const totalTokenHolding = Number(tokensData.totalTokens);
-    const tokenNames = [],
-      holdingPercentage = [];
+    const totalTokenHoldingValuation = Number(tokensData.totalWorth);
+    const tokenNames = [], valuationPercentage = [];
 
     tokensData.tokensInfo.map((token) => {
       tokenNames.push(token.name);
 
-      const tokenHoldingPercent = (
-        (Number(token.balance) / totalTokenHolding) *
+      const tokenValuationPercent = (
+        (Number(token.worth) / totalTokenHoldingValuation) *
         100
       ).toFixed(2);
-      holdingPercentage.push(tokenHoldingPercent);
+
+      valuationPercentage.push(tokenValuationPercent);
     });
 
     const data = {
@@ -42,7 +42,7 @@ export const buildChart = async (tokensData) => {
       datasets: [
         {
           label: "Portfolio",
-          data: holdingPercentage,
+          data: valuationPercentage,
           backgroundColor: [
             "rgb(255, 99, 132)",
             "rgb(54, 162, 235)",

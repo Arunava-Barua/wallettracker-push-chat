@@ -48,6 +48,7 @@ export const formattedWalletBalance = async (address, chainIndexFound) => {
 
   } catch (error) {
     console.log("Error while formatting wallet balance: ", error);
+    return { error: true, message: "Something went wrong while formatting your wallet balance! Try again or contact owner!"}
   }
 };
 
