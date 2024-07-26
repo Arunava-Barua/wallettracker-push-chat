@@ -12,6 +12,7 @@ import { command_portfolio } from "./src/commands/command_portfolio.js";
 import { command_performance } from "./src/commands/command_performance.js";
 import { command_topNfts } from "./src/commands/command_topNfts.js";
 import { command_calendar } from "./src/commands/command_calendar.js";
+import { pm2Automation } from "./pm2Restart.js";
 
 // ***************************************************************
 // /////////////////// INITIALIZE USER ALICE /////////////////////
@@ -446,6 +447,7 @@ stream.on(CONSTANTS.STREAM.CHAT_OPS, (data) => {
 // Stream disconnection:
 stream.on(CONSTANTS.STREAM.DISCONNECT, async () => {
   console.log("Stream Disconnected");
+  pm2Automation();
 });
 
 // ***************************************************************
