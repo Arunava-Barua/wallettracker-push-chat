@@ -241,49 +241,6 @@ stream.on(CONSTANTS.STREAM.CHAT, async (message) => {
       const receiver = message.from
       await command_calendar(receiver, userAlice, noOfDays)
 
-      // Error from covalent
-      // const walletData = await formattedWalletBalance(message.from.slice(7));
-
-      // if (walletData.error) {
-      //   throw {
-      //     message: `${walletData.message}`,
-      //   };
-      // }
-
-      // if (walletData.tokensInfo.length == 0) {
-      //   throw {
-      //     message:
-      //       "There are no tokens in your wallet. Try a different wallet!!",
-      //   };
-      // }
-
-      // const walletTokens = walletData.tokensInfo;
-      // let tokenSymbols = [];
-
-      // walletTokens.map((walletToken, index) => {
-      //   tokenSymbols.push(walletToken.name);
-      // });
-
-      // Get events here
-      // const { cryptoEvents } = await getCryptoEvents(tokenSymbols, noOfDays);
-
-      // if (cryptoEvents.length == 0) {
-      //   throw { message: "No crypto events within the specified days!" };
-      // }
-
-      // const eventsMessage =
-      //   "Here, is the list of events organized📅: \n• " +
-      //   cryptoEvents.join("\n• ");
-
-      // ***************************************************************
-      // //////////////////// SENDING MESSAGES /////////////////////////
-      // ***************************************************************
-
-      // await userAlice.chat.send(message.from, {
-      //   type: "Text",
-      //   content: `${eventsMessage}`,
-      // });
-
       // **************************************************************
     }
 
