@@ -1,6 +1,6 @@
 // Wallet tracker
 import { CovalentClient } from "@covalenthq/client-sdk";
-import 'dotenv/config'
+import "dotenv/config";
 
 const CHAINS = [
   "eth-mainnet",
@@ -11,6 +11,14 @@ const CHAINS = [
 ];
 const QUOTE_CURRENCY = ["USD"];
 
+const FORMATTED_CHAINS = [
+  "Ethereum",
+  "Polygon",
+  "Binance",
+  "Arbitrum",
+  "Polygon zkEVM",
+];
+
 const COVALENT_API_KEY= process.env.COVALENT_API_KEY;
 
 export const getWalletBalance = async (address, chainIndexFound) => {
@@ -19,8 +27,8 @@ export const getWalletBalance = async (address, chainIndexFound) => {
 
     const client = new CovalentClient(COVALENT_API_KEY);
 
-
-    if (chainIndexFound != -1) { // Single Chain
+    if (chainIndexFound != -1) {
+      // Single Chain
       const resp = await client.BalanceService.getTokenBalancesForWalletAddress(
         CHAINS[chainIndexFound].toString(),
         address, //  0x8bbc2Cc76DC3f6D1CC5E9FE855D66AdB6828B9fe
@@ -34,32 +42,42 @@ export const getWalletBalance = async (address, chainIndexFound) => {
       console.timeEnd("⌚covalent-api-time");
 
       return { error: false, data: resp.data.items };
-    } else { // For 5 chains
+    } else {
+      // For 5 chains
       const results = [];
+      const resultsObj = {};
 
       for (let i = 0; i < CHAINS.length; i++) {
-        const resp = await client.BalanceService.getTokenBalancesForWalletAddress(
-          CHAINS[i].toString(),
-          address, // 0x8bbc2Cc76DC3f6D1CC5E9FE855D66AdB6828B9fe
-          { quoteCurrency: QUOTE_CURRENCY[0].toString() }
-        );
+        const resp =
+          await client.BalanceService.getTokenBalancesForWalletAddress(
+            CHAINS[i].toString(),
+            address, // 0x8bbc2Cc76DC3f6D1CC5E9FE855D66AdB6828B9fe
+            { quoteCurrency: QUOTE_CURRENCY[0].toString() }
+          );
 
         if (resp.error) {
           return { error: true, message: resp.error_message };
         }
 
-        results.push(...resp.data.items)
+        // Get a key for the object
+        const key = FORMATTED_CHAINS[i].toString();
+
+        // Assign the array values to the object key
+        resultsObj[key] = [...resp.data.items];
+
+        // results.push(...resp.data.items);
       }
-      // console.log("Wallet Data: ", resp.data.items);
-  
+
+      // console.log("Wallet Data: ", resultsObj);
+
       console.timeEnd("⌚covalent-api-time");
-  
-      return { error: false, data: results };
+
+      return { error: false, data: resultsObj };
     }
   } catch (error) {
     console.log("Error getting balance of the wallet: ", error);
   }
 };
 
-// console.log(await getWalletBalance("0xcbF1e60CBD32bF6C715E2BaF9671BF382f35bdd6"));
+// await getWalletBalance("0x8bbc2Cc76DC3f6D1CC5E9FE855D66AdB6828B9fe", -1);
 // eip155:0xcbF1e60CBD32bF6C715E2BaF9671BF382f35bdd6
