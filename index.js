@@ -21,8 +21,8 @@ import { pm2Automation } from "./pm2Restart.js";
 const provider = new ethers.JsonRpcProvider(
   `${process.env.ETHEREUM_RPC_PROVIDER}`
 );
-// const signer = new ethers.Wallet(`${process.env.PRIVATE_KEY}`, provider);
-const signer = new ethers.Wallet(`${process.env.PRIVATE_KEY_TEST}`, provider);
+const signer = new ethers.Wallet(`${process.env.PRIVATE_KEY}`, provider);
+// const signer = new ethers.Wallet(`${process.env.PRIVATE_KEY_TEST}`, provider);
 console.log("Signer: ", signer);
 
 const userAlice = await PushAPI.initialize(signer, {
