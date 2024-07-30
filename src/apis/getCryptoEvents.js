@@ -1,10 +1,14 @@
+// ***************************************************************
+// /////////////////// Get Crypto Events /////////////////////
+// ***************************************************************
+//  Get data from Coindar API regarding crypto events based on tokens present in the user's wallet
+
 import axios from "axios";
 import moment from "moment";
 
 import 'dotenv/config'
 
 import { capitalizeEveryWordLetter } from "../utils/capitalize.js";
-
 
 const COINDAR_API_KEY = process.env.COINDAR_API_KEY;
 
@@ -15,7 +19,6 @@ export const getCryptoEvents = async (tokensHolding, noOfDays) => {
       `https://coindar.org/api/v2/coins?access_token=${COINDAR_API_KEY}`
     );
     const coins = response.data;
-    // console.log("Coins: ", coins);
 
     // add coinIds for a user for all tokens he holds
     const symbolSet = new Set();
@@ -35,8 +38,6 @@ export const getCryptoEvents = async (tokensHolding, noOfDays) => {
     // initiliaze today and tomorrow date for fetching events with 24h interval
     const todayDate = moment().format("YYYY-MM-DD");
     const tomorrowDate = moment().add(noOfDays, "days").format("YYYY-MM-DD");
-
-    console.log("⚠️⚠️⚠️⚠️Tommorow date: ", tomorrowDate)
 
     const eventsResponse = await axios.get(
       `https://coindar.org/api/v2/events?access_token=${COINDAR_API_KEY}&filter_date_start=${todayDate}&filter_date_end=${tomorrowDate}&filter_coins=${coinIds}&sort_by=views&order_by=1`
@@ -68,14 +69,10 @@ export const getCryptoEvents = async (tokensHolding, noOfDays) => {
       eventArray.push(formattedTitle);
     });
 
-    console.log("Events Map: ", eventArray);
-
     return { error: false, cryptoEvents: eventArray }
 
   } catch (error) {
-    console.log("Error in getCryptoEvents: ", error);
     return { error: true, message: "Error while fetching crypto events!" };
   }
 };
 
-// const response = await getCryptoEvents();
