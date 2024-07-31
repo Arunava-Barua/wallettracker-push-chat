@@ -21,6 +21,7 @@ export const command_topNfts = async (
   // //////////////////// SENDING MESSAGES /////////////////////////
   // ***************************************************************
 
+  console.log("Length: ", response.length);
   // Send NFTs and name
   for (let i = 0; i < response.length; i++) {
     const nft = response[i];

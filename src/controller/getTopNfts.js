@@ -41,7 +41,7 @@ export const getTopNfts = async (address, chainIndex, noOfNfts) => {
 
       // 1. Check for URL or base64 encoded image response
       const isUrl = isValidUrl(nft.image);
-      const isBase64 = isBase64Encoded(nft.image);
+      const isBase64 = isBase64Encoded(nft.image.split(",")[1]); // .split(",")[1]
 
       // neither
       if (!isUrl && !isBase64) {
@@ -74,6 +74,7 @@ export const getTopNfts = async (address, chainIndex, noOfNfts) => {
 
       // isBase64
       if (isBase64) {
+        console.log("In isBase64");
         const base64Image = nft.image;
 
         const compressedBase64 = await resizeAndCompressBase64Image(
@@ -119,7 +120,7 @@ export const getTopNfts = async (address, chainIndex, noOfNfts) => {
 // for (let i = 0; i < response.length; i++) {
 //   const nft = response[i];
 
-//   const recipient = "0xcbF1e60CBD32bF6C715E2BaF9671BF382f35bdd6";
+//   const recipient = "0x048f42e56DDF2E3737D55676609F148059DBa267";
 
 //   await userAlice.chat.send(recipient, {
 //     type: 'Text',
