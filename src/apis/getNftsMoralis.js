@@ -31,7 +31,9 @@ export const getNfts = async (address, chainIndex) => {
     data.map((nft, index) => {
       const nftMetadata = JSON.parse(nft.metadata);
 
-      results.push(nftMetadata);
+      if (nftMetadata) {
+        results.push(nftMetadata);
+      }
     });
 
     // console.log(results)
