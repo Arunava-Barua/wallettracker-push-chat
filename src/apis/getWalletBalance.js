@@ -19,7 +19,8 @@ const FORMATTED_CHAINS = [
   "Polygon zkEVM",
 ];
 
-const COVALENT_API_KEY= process.env.COVALENT_API_KEY;
+// const COVALENT_API_KEY= process.env.COVALENT_API_KEY;
+const COVALENT_API_KEY= "ckey_91f0e2d313784ddc842e33e0bac";
 
 export const getWalletBalance = async (address, chainIndexFound) => {
   try {
@@ -79,5 +80,8 @@ export const getWalletBalance = async (address, chainIndexFound) => {
   }
 };
 
-// await getWalletBalance("0x8bbc2Cc76DC3f6D1CC5E9FE855D66AdB6828B9fe", -1);
+// const response = await getWalletBalance("0x8bbc2Cc76DC3f6D1CC5E9FE855D66AdB6828B9fe", -1);
+// const obj = response.data;
+// const combinedArray = Object.values(obj).flat();
+// console.log(combinedArray);
 // eip155:0xcbF1e60CBD32bF6C715E2BaF9671BF382f35bdd6
