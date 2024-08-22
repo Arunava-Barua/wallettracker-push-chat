@@ -1,18 +1,30 @@
-import shortener from "node-url-shortener";
+import axios from "axios";
+import "dotenv/config";
 
-export const urlShortener = (longUrl) => {
-  let shortenedUrl = "";
-  console.log(longUrl)
+const BITLY_ACCESS_TOKEN = process.env.BITLY_ACCESS_TOKEN;
 
-  const varibale = shortener.short(longUrl, function (err, url) {
-    shortenedUrl = url;
-    console.log(shortenedUrl)
-    console.log(url);
+export const urlShortener = async (longUrl) => {
+  try {
+    const response = await axios.post(
+      "https://api-ssl.bitly.com/v4/shorten",
+      {
+        long_url: longUrl,
+        domain: "bit.ly",
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${BITLY_ACCESS_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
-    return shortenedUrl;
-  });
-
-  return shortenedUrl;
+    return response.data.link;
+  } catch (error) {
+    console.error(error.response ? error.response.data : error.message);
+    return {
+      error: true,
+      message: "Something went wrong while shortening the URL",
+    };
+  }
 };
-
-// console.log(urlShortener("app.uniswap.org/#/add/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/500"))

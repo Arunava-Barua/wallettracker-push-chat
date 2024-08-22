@@ -1,7 +1,7 @@
 import pm2 from "pm2";
 
 // Replace 'your-process-name-or-id' with the name or id of your process
-const processNameOrId = "0";
+const processNameOrId = "5";
 
 export const pm2Automation = () => {
   pm2.connect((err) => {
