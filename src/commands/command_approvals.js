@@ -22,6 +22,8 @@ export const command_approvals = async (
         chainIndexFound
       );
 
+      console.log("Wallet Data: ", walletData);
+
       if (walletData.error) {
         throw {
           message: `${walletData.message}`,
@@ -67,7 +69,7 @@ export const command_approvals = async (
 
     await userAlice.chat.send(receiver, {
       type: "Text",
-      content: `Total Active Approvals: ✅ ${totalArrovals}\n\n${walletApprovals}`,
+      content: `Total Active Approvals: ✅ ${totalArrovals}\n\n${walletApprovals}\nRevoke unwanted approvals in https://revoke.cash/`,
     });
     // console.log("Message sent: ", walletApprovals)
   } catch (error) {

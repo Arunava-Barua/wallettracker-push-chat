@@ -10,8 +10,8 @@ const CHAINS = [
   "eth-mainnet",
   "matic-mainnet",
   "bsc-mainnet",
-  "arbitrum-mainnet",
-  "polygon-zkevm-mainnet",
+  // "arbitrum-mainnet",
+  // "polygon-zkevm-mainnet",
 ];
 const QUOTE_CURRENCY = ["USD"];
 
@@ -37,6 +37,8 @@ export const getTokenApprovals = async (address, chainIndexFound) => {
         address
       );
 
+      console.log("Covalent Response: ", resp)
+
       if (resp.error) {
         return { error: true, message: resp.error_message };
       }
@@ -51,6 +53,8 @@ export const getTokenApprovals = async (address, chainIndexFound) => {
           CHAINS[i].toString(),
           address
         );
+
+        console.log("Covalent Response: ", resp)
 
         if (resp.error) {
           return { error: true, message: resp.error_message };

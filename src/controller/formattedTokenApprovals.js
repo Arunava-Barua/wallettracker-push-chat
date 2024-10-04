@@ -7,6 +7,8 @@ export const formattedTokenApprovals = async (address, chainIndexFound) => {
     let totalApprovals = 0,
       totalApprovalsTemp = 0;
 
+    console.log("Get token Approvals data: ", data)
+
     if (data.error) {
       return { error: true, message: data.message };
     }
